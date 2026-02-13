@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Pi Payment Test</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Pi SDK -->
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+</head>
+<body>
+  <h1>Pi Payment Test</h1>
+  <button id="pay-btn">Pay 0.01 π</button>
+
+  <pre id="log"></pre>
+
+  <script>
+    const log = (msg) => {
+      document.getElementById('log').textContent += msg + "\n";
+      console.log(msg);
+    };
+
+    // あなたの App 公開キー（Developer Portal の「App Keys」）
+    const PI_APP_ID = "YOUR_PI_APP_ID";
+
+    // SDK 初期化
+    Pi.init({
+      version: "2.0",
+      sandbox: false, // 本番URLで⑩をクリアするなら false
+      onIncompletePaymentFound: (payment) => {
+        log("Incomplete payment found: " + JSON.stringify(payment));
+      }
+    });
+
+    document.getElementById('pay-btn').addEventListener('click', async () => {
+      try {
+        // Pi 認証（ユーザーの Pi アカウントと紐付け）
+        const scopes = ['payments'];
+        const authResult = await Pi.authenticate(scopes, onIncompletePaymentFound);
+        log("Authenticated: " + JSON.stringify(authResult));
+
+        // 支払い開始
+        const paymentData = {
+          amount: 0.01,
+          memo: "Test payment for step 10",
+          metadata: { orderId: "test-" + Date.now() }
+        };
+
+        const payment = await Pi.createPayment(paymentData, {
+          // サーバー承認
+          onReadyForServerApproval: async (paymentId) => {
+            log("onReadyForServerApproval: " + paymentId);
+            const res = await fetch("webhook.php?action=approve", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId })
+            });
+            const data = await res.json();
+            log("Server approve result: " + JSON.stringify(data));
+          },
+
+          // サーバー完了
+          onReadyForServerCompletion: async (paymentId, txid) => {
+            log("onReadyForServerCompletion: " + paymentId + " txid=" + txid);
+            const res = await fetch("webhook.php?action=complete", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ paymentId, txid })
+            });
+            const data = await res.json();
+            log("Server complete result: " + JSON.stringify(data));
+          },
+
+          onCancel: (paymentId) => {
+            log("Payment cancelled: " + paymentId);
+          },
+
+          onError: (error, payment) => {
+            log("Payment error: " + error + " payment=" + JSON.stringify(payment));
+          }
+        });
+
+        log("Payment object: " + JSON.stringify(payment));
+      } catch (e) {
+        log("Error: " + e);
+      }
+    });
+
+    function onIncompletePaymentFound(payment) {
+      log("onIncompletePaymentFound callback: " + JSON.stringify(payment));
+    }
+  </script>
+</body>
+</html>
