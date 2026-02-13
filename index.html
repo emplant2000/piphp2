@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi Network 決済デモ
+  - シンプル版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section h2 i {
+            font-size: 24px;
+        }
+        
+        .product-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .product-card h3 {
+            color: #17a2b8;
+            margin-bottom: 10px;
+        }
+        
+        .price {
+            font-size: 32px;
+            font-weight: bold;
+            color: #28a745;
+            margin: 10px 0;
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .status-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .payment-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 12px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #17a2b8;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .badge.testnet {
+            background: #ffc107;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Pi Network 決済デモ <span class="badge testnet">TESTNET</span></h1>
+            <p>pi-app-id: testnet_dummy_app_001</p>
+        </div>
+        
+        <div class="content">
+            <!-- ログインセクション -->
+            <div class="section" id="loginSection">
+                <h2><i>🔐</i> ステップ1: Pi Network ログイン</h2>
+                <p>Piアプリを使用して認証を行ってください</p>
+                
+                <div id="loginStatus" class="status-box status-info">
+                    Pi Network Testnetに接続する準備ができています
+                </div>
+                
+                <button id="loginBtn" class="btn btn-primary" onclick="authenticate()">
+                    <span id="loginText">Piでログイン</span>
+                    <span id="loginLoader" class="loader hidden"></span>
+                </button>
+            </div>
+            
+            <!-- 決済セクション -->
+            <div class="section hidden" id="paymentSection">
+                <h2><i>🛒</i> ステップ2: 商品選択</h2>
+                
+                <div class="product-card">
+                    <h3>デジタル商品パック</h3>
+                    <p>テスト用のデジタル商品です</p>
+                    <div class="price">1 π</div>
+                    <p>商品ID: DIGITAL_001</p>
+                </div>
+                
+                <div class="product-card">
+                    <h3>プレミアム機能</h3>
+                    <p>追加機能のテスト用</p>
+                    <div class="price">5 π</div>
+                    <p>商品ID: PREMIUM_001</p>
+                </div>
+                
+                <div>
+                    <label for="amountInput">カスタム金額 (π):</label>
+                    <input type="number" id="amountInput" min="0.1" max="100" step="0.1" value="1" 
+                           style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                
+                <div>
+                    <label for="memoInput">メモ (任意):</label>
+                    <input type="text" id="memoInput" placeholder="購入内容のメモ"
+                           style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                
+                <div id="paymentStatus" class="status-box status-info">
+                    金額を選択して決済を開始してください
+                </div>
+                
+                <button id="paymentBtn" class="btn btn-success" onclick="createPayment()">
+                    <span id="paymentText">決済を実行</span>
+                    <span id="paymentLoader" class="loader hidden"></span>
+                </button>
+            </div>
+            
+            <!-- 結果セクション -->
+            <div class="section hidden" id="resultSection">
+                <h2><i>✅</i> ステップ3: 決済完了</h2>
+                
+                <div id="resultStatus" class="status-box status-success">
+                    決済が正常に完了しました！
+                </div>
+                
+                <div id="resultDetails" class="payment-details">
+                    <!-- 決済詳細がここに表示されます -->
+                </div>
+                
+                <button class="btn btn-secondary" onclick="resetApp()">新しい決済を開始</button>
+                <button class="btn btn-primary" onclick="viewTransaction()" style="margin-top: 10px;">
+                    トランザクションを確認
+                </button>
+            </div>
+            
+            <!-- デバッグ情報 -->
+            <div class="section" id="debugSection">
+                <h2><i>🐛</i> デバッグ情報</h2>
+                <div id="debugInfo" class="payment-details">
+                    セッション情報がここに表示されます
+                </div>
+                <button class="btn btn-secondary" onclick="clearDebug()" style="margin-top: 10px;">
+                    デバッグ情報をクリア
+                </button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>⚠️ これはテストネット用デモアプリです。実際のPiは使用されません。</p>
+            <p>Pi Network Testnet | Version 1.0.0</p>
+        </div>
+    </div>
+
+    <!-- PiSDKスクリプト -->
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script>
+        // ====================
+        // グローバル変数
+        // ====================
+        let pi = null;
+        let currentUser = null;
+        let currentPayment = null;
+        let sessionData = {
+            startTime: new Date().toISOString(),
+            payments: [],
+            logs: []
+        };
+
+        // ====================
+        // ログ関数
+        // ====================
+        function addLog(message, data = null) {
+            const logEntry = {
+                timestamp: new Date().toISOString(),
+                message: message,
+                data: data
+            };
+            
+            sessionData.logs.push(logEntry);
+            updateDebugInfo();
+            
+            console.log(`[PiSDK] ${message}`, data || '');
+        }
+
+        // ====================
+        // 初期化関数
+        // ====================
+        function initializePiSDK() {
+            try {
+                addLog('PiSDK初期化開始');
+                
+                pi = new window.Pi({
+                    sandbox: true, // Testnetモード
+                    version: "2.0"
+                });
+                
+                addLog('PiSDK初期化完了', { sandbox: true, version: "2.0" });
+                updateStatus('loginStatus', 'PiSDKの初期化が完了しました', 'info');
+                
+            } catch (error) {
+                addLog('PiSDK初期化エラー', error);
+                updateStatus('loginStatus', `初期化エラー: ${error.message}`, 'error');
+            }
+        }
+
+        // ====================
+        // 認証関数
+        // ====================
+        async function authenticate() {
+            if (!pi) {
+                updateStatus('loginStatus', 'PiSDKが初期化されていません', 'error');
+                return;
+            }
+
+            try {
+                // UI更新
+                showLoader('login');
+                updateStatus('loginStatus', 'Pi Networkに接続中...', 'info');
+                
+                // スコープ設定
+                const scopes = ['username', 'payments', 'wallet_address'];
+                
+                addLog('認証開始', { scopes: scopes });
+                
+                // PiSDK認証実行
+                const user = await pi.authenticate(scopes, onIncompletePaymentFound);
+                
+                // ユーザー情報保存
+                currentUser = {
+                    uid: user.uid,
+                    username: user.username,
+                    walletAddress: user.walletAddress || 'N/A'
+                };
+                
+                addLog('認証成功', currentUser);
+                
+                // 成功メッセージ
+                updateStatus('loginStatus', 
+                    `✅ ログイン成功！<br>
+                    👤 ユーザー: ${user.username}<br>
+                    🆔 UID: ${user.uid.substring(0, 8)}...<br>
+                    💳 ウォレット: ${user.walletAddress ? user.walletAddress.substring(0, 10) + '...' : 'N/A'}`, 
+                    'success'
+                );
+                
+                // 決済セクション表示
+                document.getElementById('loginSection').style.opacity = '0.6';
+                document.getElementById('paymentSection').classList.remove('hidden');
+                
+                hideLoader('login');
+                
+            } catch (error) {
+                addLog('認証エラー', error);
+                updateStatus('loginStatus', 
+                    `❌ 認証エラー: ${error.message || '不明なエラーが発生しました'}`, 
+                    'error'
+                );
+                hideLoader('login');
+            }
+        }
+
+        // ====================
+        // 未完了決済処理
+        // ====================
+        function onIncompletePaymentFound(payment) {
+            addLog('未完了決済を検出', payment);
+            
+            updateStatus('paymentStatus', 
+                `未完了の決済があります: ${payment.identifier}<br>
+                処理を続行します...`, 
+                'warning'
+            );
+            
+            // 自動的に完了処理を試みる
+            return pi.completePayment(payment);
+        }
+
+        // ====================
+        // 決済作成関数
+        // ====================
+        async function createPayment() {
+            if (!currentUser || !pi) {
+                updateStatus('paymentStatus', '先にログインしてください', 'error');
+                return;
+            }
+
+            try {
+                // 入力値取得
+                const amount = parseFloat(document.getElementById('amountInput').value) || 1;
+                const memo = document.getElementById('memoInput').value || 
+                            `テスト購入
+  - ${new Date().toLocaleString()}`;
+                
+                if (amount <= 0) {
+                    updateStatus('paymentStatus', '有効な金額を入力してください', 'error');
+                    return;
+                }
+
+                // UI更新
+                showLoader('payment');
+                updateStatus('paymentStatus', '決済リクエストを作成中...', 'info');
+                
+                // 決済データ
+                const paymentData = {
+                    amount: amount,
+                    memo: memo,
+                    metadata: {
+                        productId: amount >= 5 ? "PREMIUM_001" : "DIGITAL_001",
+                        userId: currentUser.uid,
+                        appId: "testnet_dummy_app_001",
+                        timestamp: new Date().toISOString(),
+                        environment: "testnet"
+                    }
+                };
+                
+                addLog('決済作成開始', paymentData);
+                
+                // 決済作成
+                const payment = await pi.createPayment(paymentData);
+                currentPayment = payment;
+                
+                addLog('決済作成成功', payment);
+                
+                updateStatus('paymentStatus', 
+                    `✅ 決済リクエスト作成完了！<br>
+                    💰 金額: ${amount} π<br>
+                    🆔 決済ID: ${payment.identifier}<br>
+                    <small>Piアプリで承認を完了してください</small>`, 
+                    'success'
+                );
+                
+                // 決済完了を監視
+                monitorPayment(payment.identifier);
+                
+                hideLoader('payment');
+                
+            } catch (error) {
+                addLog('決済作成エラー', error);
+                updateStatus('paymentStatus', 
+                    `❌ 決済エラー: ${error.message || '不明なエラー'}`, 
+                    'error'
+                );
+                hideLoader('payment');
+            }
+        }
+
+        // ====================
+        // 決済監視関数
+        // ====================
+        async function monitorPayment(paymentId) {
+            addLog('決済監視開始', { paymentId: paymentId });
+            
+            updateStatus('paymentStatus', 
+                '⏳ ユーザーの承認を待っています...<br><small>Piアプリで決済を承認してください</small>', 
+                'warning'
+            );
+            
+            try {
+                // 決済完了を待機
+                const approvedPayment = await pi.waitForPayment(paymentId, {
+                    onReadyForServerCompletion: async (paymentId) => {
+                        addLog('サーバー完了処理開始', { paymentId: paymentId });
+                        
+                        // サーバー処理実行
+                        const serverResult = await completePaymentOnServer(paymentId);
+                        
+                        if (serverResult.success) {
+                            addLog('サーバー処理成功', serverResult);
+                            return { success: true };
+                        } else {
+                            addLog('サーバー処理失敗', serverResult);
+                            return { success: false, error: serverResult.error };
+                        }
+                    }
+                });
+                
+                // 決済完了処理
+                await handlePaymentCompletion(approvedPayment);
+                
+            } catch (error) {
+                addLog('決済監視エラー', error);
+                updateStatus('paymentStatus', 
+                    `❌ 決済監視エラー: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        // ====================
+        // サーバー完了処理
+        // ====================
+        async function completePaymentOnServer(paymentId) {
+            try {
+                updateStatus('paymentStatus', '🔄 サーバー処理を実行中...', 'info');
+                
+                // HerokuのWebhookエンドポイントを呼び出し
+                const response = await fetch('/webhook.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        paymentId: paymentId,
+                        action: 'complete',
+                        user: currentUser,
+                        timestamp: new Date().toISOString(),
+                        appId: 'testnet_dummy_app_001'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    addLog('サーバー処理成功', result);
+                    updateStatus('paymentStatus', '✅ サーバー処理完了', 'success');
+                    return { success: true, data: result };
+                } else {
+                    throw new Error(result.error || 'サーバー処理失敗');
+                }
+                
+            } catch (error) {
+                addLog('サーバー処理エラー', error);
+                return { 
+                    success: false, 
+                    error: error.message,
+                    // フォールバック: ローカルで完了処理
+                    fallback: true
+                };
+            }
+        }
+        // ====================
+        // 決済完了処理
+        // ====================
+        async function handlePaymentCompletion(payment) {
+            try {
+                addLog('決済完了処理開始', payment);
+                
+                // 決済情報をセッションに保存
+                sessionData.payments.push({
+                    id: payment.identifier,
+                    amount: payment.amount,
+                    status: payment.status,
+                    timestamp: new Date().toISOString(),
+                    user: currentUser.uid
+                });
+                
+                // 結果表示
+                showPaymentResult(payment);
+                
+                addLog('決済完了', payment);
+                
+            } catch (error) {
+                addLog('決済完了処理エラー', error);
+                updateStatus('paymentStatus', 
+                    `❌ 完了処理エラー: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        // ====================
+        // 決済結果表示
+        // ====================
+        function showPaymentResult(payment) {
+            // セクション切り替え
+            document.getElementById('paymentSection').classList.add('hidden');
+            document.getElementById('resultSection').classList.remove('hidden');
+            
+            // 詳細情報作成
+            const details = `
+                <strong>🎉 決済が完了しました！</strong>
+                <br><br>
+                <strong>決済ID:</strong> ${payment.identifier}
+                <br>
+                <strong>金額:</strong> ${payment.amount} π
+                <br>
+                <strong>状態:</strong> ${payment.status}
+                <br>
+                <strong>ユーザー:</strong> ${currentUser.username}
+                <br>
+                <strong>UID:</strong> ${currentUser.uid.substring(0, 12)}...
+                <br>
+                <strong>完了日時:</strong> ${new Date().toLocaleString()}
+                <br><br>
+                <small>※ これはテストネットでの取引です</small>
+            `;
+            
+            document.getElementById('resultDetails').innerHTML = details;
+            
+            updateStatus('resultStatus', 
+                '✅ 決済が正常に完了しました！<br><small>デジタル商品が提供されました</small>', 
+                'success'
+            );
+        }
+
+        // ====================
+        // トランザクション表示
+        // ====================
+        function viewTransaction() {
+            if (!currentPayment) {
+                alert('決済情報がありません');
+                return;
+            }
+            
+            const txDetails = `
+                <strong>取引詳細:</strong>
+                <br><br>
+                <strong>決済ID:</strong> ${currentPayment.identifier}
+                <br>
+                <strong>金額:</strong> ${currentPayment.amount} π
+                <br>
+                <strong>メモ:</strong> ${currentPayment.memo || 'N/A'}
+                <br>
+                <strong>ユーザーUID:</strong> ${currentUser.uid}
+                <br>
+                <strong>タイムスタンプ:</strong> ${new Date().toISOString()}
+                <br><br>
+                <strong>テストネットURL:</strong>
+                <br>
+                <a href="https://testnet.minepi.com" target="_blank">
+                    https://testnet.minepi.com
+                </a>
+            `;
+            
+            document.getElementById('resultDetails').innerHTML = txDetails;
+        }
+
+        // ====================
+        // アプリリセット
+        // ====================
+        function resetApp() {
+            addLog('アプリリセット');
+            
+            // 表示リセット
+            document.getElementById('loginSection').style.opacity = '1';
+            document.getElementById('paymentSection').classList.add('hidden');
+            document.getElementById('resultSection').classList.add('hidden');
+            
+            // 入力値リセット
+            document.getElementById('amountInput').value = '1';
+            document.getElementById('memoInput').value = '';
+            
+            // ステータスリセット
+            updateStatus('loginStatus', '新しいセッションを開始してください', 'info');
+            updateStatus('paymentStatus', '金額を選択して決済を開始してください', 'info');
+            
+            // ユーザー情報保持（オプション）
+            // currentUser = null;
+            // currentPayment = null;
+        }
+
+        // ====================
+        // デバッグ情報更新
+        // ====================
+        function updateDebugInfo() {
+            const debugDiv = document.getElementById('debugInfo');
+            
+            const info = `
+                <strong>セッション情報:</strong>
+                <br>開始: ${new Date(sessionData.startTime).toLocaleString()}
+                <br>ユーザー: ${currentUser ? currentUser.username : '未ログイン'}
+                <br>決済回数: ${sessionData.payments.length}
+                <br>ログ数: ${sessionData.logs.length}
+                <br><br>
+                <strong>最新ログ:</strong>
+                ${sessionData.logs.slice(-3).map(log => 
+                    `<br>${new Date(log.timestamp).toLocaleTimeString()}: ${log.message}`
+                ).join('')}
+            `;
+            
+            debugDiv.innerHTML = info;
+        }
+
+        // ====================
+        // デバッグ情報クリア
+        // ====================
+        function clearDebug() {
+            sessionData.logs = [];
+            updateDebugInfo();
+            addLog('デバッグ情報をクリアしました');
+        }
+
+        // ====================
+        // ユーティリティ関数
+        // ====================
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = `status-box status-${type}`;
+        }
+
+        function showLoader(type) {
+            document.getElementById(`${type}Loader`).classList.remove('hidden');
+            document.getElementById(`${type}Text`).style.opacity = '0.5';
+        }
+
+        function hideLoader(type) {
+            document.getElementById(`${type}Loader`).classList.add('hidden');
+            document.getElementById(`${type}Text`).style.opacity = '1';
+        }
+
+        // ====================
+        // 初期化
+        // ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('アプリケーション起動');
+            initializePiSDK();
+            updateDebugInfo();
+        });
+    </script>
+</body>
+</html>
